@@ -26,7 +26,6 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -38,7 +37,9 @@ public class RawSocketSender implements Sender {
 
     private MessagePack msgpack;
 
-    private SocketAddress server;
+    private String host;
+
+    private int port;
 
     private Socket socket;
 
@@ -71,7 +72,8 @@ public class RawSocketSender implements Sender {
         msgpack = new MessagePack();
         msgpack.register(Event.class, Event.EventTemplate.INSTANCE);
         pendings = ByteBuffer.allocate(bufferCapacity);
-        server = new InetSocketAddress(host, port);
+        this.host = host;
+        this.port = port;
         this.reconnector = reconnector;
         name = String.format("%s_%d_%d_%d", host, port, timeout, bufferCapacity);
         this.timeout = timeout;
@@ -80,7 +82,7 @@ public class RawSocketSender implements Sender {
     private void connect() throws IOException {
         try {
             socket = new Socket();
-            socket.connect(server, timeout);
+            socket.connect(new InetSocketAddress(host, port), timeout);
             out = new BufferedOutputStream(socket.getOutputStream());
         } catch (IOException e) {
             throw e;
@@ -153,7 +155,7 @@ public class RawSocketSender implements Sender {
             if (pendings.position() == 0) {
                 return true;
             } else {
-                LOG.error("Cannot send logs to " + server.toString());
+                LOG.error("Cannot send logs to " + host + ":" + port);
             }
         }
 
